@@ -10,7 +10,8 @@ const YOUTUBE_SCOPES = [
  */
 export function getAuthUrl() {
   const clientId = process.env.YOUTUBE_CLIENT_ID;
-  const redirectUri = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/youtube/callback`;
+  const baseUrl = (process.env.NEXTAUTH_URL || 'http://localhost:3000').replace(/\/+$/, '');
+  const redirectUri = `${baseUrl}/api/youtube/callback`;
 
   const params = new URLSearchParams({
     client_id: clientId,
@@ -28,6 +29,8 @@ export function getAuthUrl() {
  * Exchange authorization code for access + refresh tokens
  */
 export async function exchangeCodeForTokens(code) {
+  const baseUrl = (process.env.NEXTAUTH_URL || 'http://localhost:3000').replace(/\/+$/, '');
+  
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -35,7 +38,7 @@ export async function exchangeCodeForTokens(code) {
       code,
       client_id: process.env.YOUTUBE_CLIENT_ID,
       client_secret: process.env.YOUTUBE_CLIENT_SECRET,
-      redirect_uri: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/youtube/callback`,
+      redirect_uri: `${baseUrl}/api/youtube/callback`,
       grant_type: 'authorization_code',
     }),
   });
