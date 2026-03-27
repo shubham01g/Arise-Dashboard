@@ -1,37 +1,29 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getValidAccessToken, fetchChannelStats, fetchRecentUploads } from '@/lib/youtube';
+import { fetchChannelStats, fetchRecentUploads } from '@/lib/youtube';
 
 export async function GET() {
   try {
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    const channelId = process.env.YOUTUBE_CHANNEL_ID;
+
+    if (!apiKey || !channelId) {
+      return NextResponse.json({ 
+        connected: false, 
+        error: 'YouTube API Key or Channel ID missing in environment variables' 
+      }, { status: 200 });
+    }
+
+    // Fetch live stats from YouTube using API Key
+    const stats = await fetchChannelStats(apiKey, channelId);
+    const recentVideos = await fetchRecentUploads(apiKey, channelId, 5);
+
+    // Cache updated stats in Supabase
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
 
-    // Check if we have stored tokens
-    const { data: tokens } = await supabase
-      .from('youtube_tokens')
-      .select('*')
-      .eq('id', 1)
-      .single();
-
-    if (!tokens) {
-      return NextResponse.json({ connected: false, error: 'Not connected to YouTube' }, { status: 200 });
-    }
-
-    // Get a valid (possibly refreshed) access token
-    const accessToken = await getValidAccessToken(supabase);
-
-    if (!accessToken) {
-      return NextResponse.json({ connected: false, error: 'Token expired' }, { status: 200 });
-    }
-
-    // Fetch live stats from YouTube
-    const stats = await fetchChannelStats(accessToken);
-    const recentVideos = await fetchRecentUploads(accessToken, 5);
-
-    // Cache updated stats in Supabase
     await supabase.from('youtube_channel_stats').upsert([{
       id: 1,
       subscriber_count: stats.subscriberCount,

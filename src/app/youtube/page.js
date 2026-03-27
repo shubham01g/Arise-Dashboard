@@ -27,19 +27,7 @@ export default function YouTubePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Check URL params for connection status
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('connected') === 'true') {
-      fetchYouTubeStats();
-      window.history.replaceState({}, '', '/youtube');
-    }
-    if (params.get('error')) {
-      console.error('YouTube auth error:', params.get('error'));
-      window.history.replaceState({}, '', '/youtube');
-    }
-  }, []);
+
 
   async function refresh() {
     setVideos(await getYoutubeVideos());
@@ -90,6 +78,7 @@ export default function YouTubePage() {
   const filmingVideos = videos.filter(v => v.status === 'filming');
   const editingVideos = videos.filter(v => v.status === 'editing');
 
+  // Format large numbers for display
   const formatCount = (n) => {
     if (!n) return '0';
     if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
@@ -99,26 +88,18 @@ export default function YouTubePage() {
 
   return (
     <div className="space-y-8">
-      {/* YouTube Connection Banner */}
+      {/* Missing Configuration Banner */}
       {!ytLoading && !ytConnected && (
-        <div className="rounded-[2rem] p-6 flex items-center justify-between border-2 border-dashed" style={{ borderColor: '#2a4bd9', backgroundColor: 'rgba(42,75,217,0.03)' }}>
+        <div className="rounded-[2rem] p-6 flex items-center justify-between border-2 border-dashed" style={{ borderColor: '#af2700', backgroundColor: 'rgba(175,39,0,0.03)' }}>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style={{ backgroundColor: '#af2700' }}>
-              <span className="material-symbols-outlined text-2xl">link</span>
+              <span className="material-symbols-outlined text-2xl">warning</span>
             </div>
             <div>
-              <h3 className="font-headline text-lg font-bold" style={{ color: '#2a2f32' }}>Connect YouTube Account</h3>
-              <p className="text-sm" style={{ color: '#575c60' }}>Link your channel to pull live subscriber counts, views, and recent uploads.</p>
+              <h3 className="font-headline text-lg font-bold" style={{ color: '#af2700' }}>YouTube API Configuration Missing</h3>
+              <p className="text-sm" style={{ color: '#575c60' }}>Please add YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID to your Vercel Environment Variables.</p>
             </div>
           </div>
-          <a
-            href="/api/youtube/auth"
-            className="px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 text-white hover:shadow-lg transition-all active:scale-95"
-            style={{ background: 'linear-gradient(135deg, #2a4bd9 0%, #879aff 100%)' }}
-          >
-            <span className="material-symbols-outlined text-[18px]">login</span>
-            Connect Now
-          </a>
         </div>
       )}
 
@@ -179,11 +160,11 @@ export default function YouTubePage() {
                   <p className="text-xs" style={{ color: '#575c60' }}>Editing phase is lagging</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4 p-4 rounded-2xl" style={{ backgroundColor: '#ecf1f6' }}>
-                <span className="material-symbols-outlined filled" style={{ color: '#006575' }}>check_circle</span>
+              <div className=\"flex items-center gap-4 p-4 rounded-2xl\" style={{ backgroundColor: '#ecf1f6' }}>
+                <span className=\"material-symbols-outlined filled\" style={{ color: '#006575' }}>check_circle</span>
                 <div>
-                  <p className="text-sm font-bold" style={{ color: '#2a2f32' }}>Script Approved</p>
-                  <p className="text-xs" style={{ color: '#575c60' }}>Completed 4h ago</p>
+                  <p className=\"text-sm font-bold\" style={{ color: '#2a2f32' }}>Script Approved</p>
+                  <p className=\"text-xs\" style={{ color: '#575c60' }}>Completed 4h ago</p>
                 </div>
               </div>
             </div>
@@ -342,7 +323,7 @@ export default function YouTubePage() {
         </div>
       </section>
 
-      {/* Section 3: Production Stats */}
+      {/* Section 3: Production Stats — LIVE from YouTube API when connected */}
       <section className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-4">
         <div className="p-6 rounded-[1.5rem] flex items-center gap-4" style={{ backgroundColor: '#ecf1f6' }}>
           <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm" style={{ color: '#2a4bd9' }}>
