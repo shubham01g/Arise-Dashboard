@@ -6,7 +6,7 @@ import { getYoutubeVideos, saveYoutubeVideo, resetVideoTimer, getVideoDeadline }
 export default function YouTubePage() {
   const [videos, setVideos] = useState([]);
   const [form, setForm] = useState({ title: '', category: 'Strategy' });
-  const [deadline, setDeadline] = useState({ hoursLeft: 47, minutesLeft: 12, isOverdue: false });
+  const [deadline, setDeadline] = useState({ hoursLeft: 0, minutesLeft: 0, secondsLeft: 0, isOverdue: false, targetTime: null });
   const [mounted, setMounted] = useState(false);
 
   // YouTube API state
@@ -21,9 +21,20 @@ export default function YouTubePage() {
     refresh();
     fetchYouTubeStats();
     
-    const interval = setInterval(async () => {
-      setDeadline(await getVideoDeadline());
-    }, 60000);
+    const interval = setInterval(() => {
+      setDeadline(prev => {
+        if (!prev.targetTime) return prev;
+        const diff = prev.targetTime - Date.now();
+        if (diff <= 0) return { hoursLeft: 0, minutesLeft: 0, secondsLeft: 0, isOverdue: true, targetTime: prev.targetTime };
+        return {
+          hoursLeft: Math.floor(diff / (1000 * 60 * 60)),
+          minutesLeft: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+          secondsLeft: Math.floor((diff % (1000 * 60)) / 1000),
+          isOverdue: false,
+          targetTime: prev.targetTime
+        };
+      });
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -88,18 +99,22 @@ export default function YouTubePage() {
 
   return (
     <div className="space-y-8">
-      {/* Missing Configuration Banner */}
+      {/* Missing Configuration / Disconnected Banner */}
       {!ytLoading && !ytConnected && (
-        <div className="rounded-[2rem] p-6 flex items-center justify-between border-2 border-dashed" style={{ borderColor: '#af2700', backgroundColor: 'rgba(175,39,0,0.03)' }}>
+        <div className="rounded-[2rem] p-6 flex items-center justify-between border-2 border-dashed" style={{ borderColor: '#2a4bd9', backgroundColor: 'rgba(42,75,217,0.03)' }}>
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style={{ backgroundColor: '#af2700' }}>
-              <span className="material-symbols-outlined text-2xl">warning</span>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style={{ backgroundColor: '#2a4bd9' }}>
+              <span className="material-symbols-outlined text-2xl">link</span>
             </div>
             <div>
-              <h3 className="font-headline text-lg font-bold" style={{ color: '#af2700' }}>YouTube API Configuration Missing</h3>
-              <p className="text-sm" style={{ color: '#575c60' }}>Please add YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID to your Vercel Environment Variables.</p>
+              <h3 className="font-headline text-lg font-bold" style={{ color: '#2a4bd9' }}>YouTube Not Connected</h3>
+              <p className="text-sm" style={{ color: '#575c60' }}>Connect your YouTube channel using Google OAuth to sync your live stats and recent videos.</p>
             </div>
           </div>
+          <a href="/api/youtube/auth" className="px-6 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 hover:opacity-90 transition-opacity text-white" style={{ backgroundColor: '#2a4bd9' }}>
+            <span className="material-symbols-outlined text-[18px]">play_arrow</span>
+            Connect YouTube
+          </a>
         </div>
       )}
 
@@ -124,8 +139,12 @@ export default function YouTubePage() {
           <div className="relative z-10">
             <h2 className="font-headline text-lg font-semibold tracking-tight mb-2 opacity-90">NEXT PUBLISH DEADLINE</h2>
             <div className="flex items-baseline gap-4">
-              <span className="font-headline text-8xl font-extrabold tracking-tighter">{String(Math.max(0, deadline.hoursLeft)).padStart(2, '0')}:{String(Math.max(0, deadline.minutesLeft)).padStart(2, '0')}</span>
-              <span className="font-headline text-3xl font-bold opacity-80 italic">HRS</span>
+              <span className="font-headline text-8xl font-extrabold tracking-tighter">
+                {String(Math.max(0, deadline.hoursLeft)).padStart(2, '0')}:
+                {String(Math.max(0, Math.floor(deadline.minutesLeft || 0))).padStart(2, '0')}:
+                {String(Math.max(0, Math.floor(deadline.secondsLeft || 0))).padStart(2, '0')}
+              </span>
+              <span className="font-headline text-3xl font-bold opacity-80 italic">LEFT</span>
             </div>
             {deadline.isOverdue && <p className="text-red-300 font-bold mt-2 animation-pulse">Deadline Breached!</p>}
           </div>
